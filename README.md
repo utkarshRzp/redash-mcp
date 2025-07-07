@@ -40,3 +40,25 @@ root/
 ## Contributing
 
 Please see the CODEOWNERS file for maintainers of each component.
+
+
+```
+"razorpay-redash-mcp-server": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "REDASH_URL",
+        "-e",
+        "REDASH_API_KEY",
+        "redash-mcp:latest"
+      ],
+      "env": {
+        "REDASH_URL": "https://redash.razorpay.com",
+        "REDASH_API_KEY": "your-key-here"
+      }
+    }
+    
+```
