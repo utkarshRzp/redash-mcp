@@ -1,162 +1,164 @@
-# MCPGO Package
+# Razorpay Redash MCP Server
 
-The `mcpgo` package provides an abstraction layer over the `github.com/mark3labs/mcp-go` library. Its purpose is to isolate this external dependency from the rest of the application by wrapping all necessary functionality within clean interfaces.
+The Redash MCP Server is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that provides seamless integration with Redash APIs, enabling advanced query execution, dashboard management, and data visualization capabilities for developers and AI tools.
 
-## Purpose
+## Available Tools
 
-This package was created to isolate the `mark3labs/mcp-go` dependency for several key reasons:
+The Redash MCP Server provides comprehensive tools for interacting with your Redash instance:
 
-1. **Dependency Isolation**: Confine all `mark3labs/mcp-go` imports to this package, ensuring the rest of the application does not directly depend on this external library.
+### Read Tools
 
-2. **Official MCP GO SDK and Future Compatibility**: Prepare for the eventual release of an official MCP SDK by creating a clean abstraction layer that can be updated to use the official SDK when it becomes available. The official SDK is currently under development (see [Official MCP Go SDK discussion](https://github.com/orgs/modelcontextprotocol/discussions/224#discussioncomment-12927030)).
+| Tool                    | Description                                           |
+|-------------------------|-------------------------------------------------------|
+| `list_queries`          | List queries with pagination and search capabilities |
+| `get_query`             | Get specific query details by ID                     |
+| `execute_query_fresh`   | Execute query with fresh data (bypasses cache)      |
+| `list_data_sources`     | List all available data sources                      |
+| `list_dashboards`       | List dashboards with pagination                      |
+| `get_dashboard`         | Get specific dashboard details by ID                 |
+| `get_visualization`     | Get specific visualization details by ID             |
 
-3. **Simplified API**: Provide a more focused, application-specific API that only exposes the functionality needed by our application.
+### Write Tools (Available in write mode)
 
-4. **Error Handling**: Implement proper error handling patterns rather than relying on panics, making the application more robust.
+| Tool                    | Description                                           |
+|-------------------------|-------------------------------------------------------|
+| `create_query`          | Create a new query                                   |
+| `update_query`          | Update an existing query                             |
+| `archive_query`         | Archive a query                                      |
 
-## Components
+## Tool Parameters
 
-The package contains several core components:
+### `list_queries`
+- `page` (optional, number): Page number (default: 1)
+- `pageSize` (optional, number): Number of queries per page (default: 25, max: 100)
+- `search` (optional, string): Search term to filter queries
 
-- **Server**: An interface representing an MCP server, with the `mark3labsImpl` providing the current implementation.
-- **Tool**: Interface for defining MCP tools that can be registered with the server.
-- **TransportServer**: Interface for different transport mechanisms (stdio, TCP).
-- **ToolResult/ToolParameter**: Structures for handling tool calls and results.
+### `get_query`
+- `queryId` (**required**, number): The ID of the query to retrieve
 
-## Parameter Helper Functions
+### `execute_query_fresh`
+- `queryId` (**required**, number): The ID of the query to execute
+- `parameters` (optional, object): Parameters for parameterized queries
 
-The package provides convenience functions for creating tool parameters:
+### `list_data_sources`
+No parameters required.
 
-- `WithString(name, description string, required bool)`: Creates a string parameter
-- `WithNumber(name, description string, required bool)`: Creates a number parameter
-- `WithBoolean(name, description string, required bool)`: Creates a boolean parameter
-- `WithObject(name, description string, required bool)`: Creates an object parameter
-- `WithArray(name, description string, required bool)`: Creates an array parameter
+### `list_dashboards`
+- `page` (optional, number): Page number (default: 1)
+- `pageSize` (optional, number): Number of dashboards per page (default: 25, max: 100)
 
-## Tool Result Helper Functions
+### `get_dashboard`
+- `dashboardId` (**required**, number): The ID of the dashboard to retrieve
 
-The package also provides functions for creating tool results:
+### `get_visualization`
+- `visualizationId` (**required**, number): The ID of the visualization to retrieve
 
-- `NewToolResultText(text string)`: Creates a text result
-- `NewToolResultJSON(data interface{})`: Creates a JSON result
-- `NewToolResultError(text string)`: Creates an error result
+### `create_query` (Write mode only)
+- `name` (**required**, string): Name of the query
+- `data_source_id` (**required**, number): ID of the data source
+- `query` (**required**, string): SQL query text
+- `description` (optional, string): Description of the query
+- `options` (optional, object): Query options
+- `schedule` (optional, object): Query schedule configuration
+- `tags` (optional, array): Query tags
 
-## Usage Example
+### `update_query` (Write mode only)
+- `queryId` (**required**, number): ID of the query to update
+- `name` (optional, string): New name for the query
+- `data_source_id` (optional, number): New data source ID
+- `query` (optional, string): New SQL query text
+- `description` (optional, string): New description
+- `options` (optional, object): New query options
+- `schedule` (optional, object): New schedule configuration
+- `tags` (optional, array): New tags
+- `is_archived` (optional, boolean): Archive status
+- `is_draft` (optional, boolean): Draft status
 
-```go
-// Create a server
-server := mcpgo.NewServer(
-    "my-server",
-    "1.0.0",
-    mcpgo.WithLogging(),
-    mcpgo.WithToolCapabilities(true),
-)
+### `archive_query` (Write mode only)
+- `queryId` (**required**, number): ID of the query to archive
 
-// Create a tool
-tool := mcpgo.NewTool(
-    "my_tool",
-    "Description of my tool",
-    []mcpgo.ToolParameter{
-        mcpgo.WithString(
-            "param1",
-            mcpgo.Description("Description of param1"),
-            mcpgo.Required(),
-        ),
-    },
-    func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.ToolResult, error) {
-        // Extract parameter value
-        param1Value, ok := req.Arguments["param1"]
-        if !ok {
-            return mcpgo.NewToolResultError("Missing required parameter: param1"), nil
-        }
-        
-        // Process and return result
-        return mcpgo.NewToolResultText("Result: " + param1Value.(string)), nil
-    },
-)
+## Use Cases
 
-// Add tool to server
-server.AddTools(tool)
+- **Data Analysis**: Execute queries and analyze results through AI assistance
+- **Dashboard Management**: Create, update, and manage Redash dashboards
+- **Query Development**: Develop and test SQL queries with AI guidance
+- **Data Visualization**: Create and manage visualizations for your data
+- **Workflow Automation**: Automate your data workflow using the Redash MCP Server
 
-// Create and run a stdio server
-stdioServer, err := mcpgo.NewStdioServer(server)
-if err != nil {
-    log.Fatalf("Failed to create stdio server: %v", err)
-}
-err = stdioServer.Listen(context.Background(), os.Stdin, os.Stdout)
-if err != nil {
-    log.Fatalf("Server error: %v", err)
-}
+## Setup
+
+### Prerequisites
+- Docker
+- Go 1.23+ (for building from source)
+- Access to a Redash instance
+- Redash API key
+
+### Using Docker (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/razorpay/redash-mcp.git
+cd redash-mcp/redash/
+
+# Build the Docker image
+docker build -t redash-mcp:latest .
+
+# Run the server
+docker run --rm -i \
+  -e REDASH_URL="https://redash.razorpay.com" \
+  -e REDASH_API_KEY="your-api-key" \
+  redash-mcp:latest
 ```
 
-## Real-world Example
+### Build from Source
 
-Here's how we use this package in the Razorpay MCP server to create a payment fetching tool:
+```bash
+# Clone the repository
+git clone https://github.com/razorpay/redash-mcp.git
+cd mcp/redash-mcp/redash/
 
-```go
-// FetchPayment returns a tool that fetches payment details using payment_id
-func FetchPayment(
-    log *slog.Logger,
-    client *rzpsdk.Client,
-) mcpgo.Tool {
-    parameters := []mcpgo.ToolParameter{
-        mcpgo.WithString(
-            "payment_id",
-            mcpgo.Description("payment_id is unique identifier of the payment to be retrieved."),
-            mcpgo.Required(),
-        ),
+# Build the binary
+go build -o redash-mcp ./cmd/main/
+
+# Run the server
+./redash-mcp stdio \
+  --redash-url "https://redash.razorpay.com" \
+  --redash-api-key "your-api-key"
+```
+
+## Usage with Claude Desktop or Cursor
+
+Add the following to your `claude_desktop_config.json` or `mcp.json` file:
+
+### Docker Configuration
+
+```json
+{
+  "mcpServers": {
+    "razorpay-redash-mcp-server": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "REDASH_URL",
+        "-e",
+        "REDASH_API_KEY",
+        "redash-mcp:latest"
+      ],
+      "env": {
+        "REDASH_URL": "https://redash.razorpay.com",
+        "REDASH_API_KEY": "your-api-key"
+      }
     }
-
-    handler := func(
-        ctx context.Context,
-        r mcpgo.CallToolRequest,
-    ) (*mcpgo.ToolResult, error) {
-        arg, ok := r.Arguments["payment_id"]
-        if !ok {
-            return mcpgo.NewToolResultError(
-                "payment id is a required field"), nil
-        }
-        id, ok := arg.(string)
-        if !ok {
-            return mcpgo.NewToolResultError(
-                "payment id is expected to be a string"), nil
-        }
-
-        payment, err := client.Payment.Fetch(id, nil, nil)
-        if err != nil {
-            return mcpgo.NewToolResultError(
-                fmt.Sprintf("fetching payment failed: %s", err.Error())), nil
-        }
-
-        return mcpgo.NewToolResultJSON(payment)
-    }
-
-    return mcpgo.NewTool(
-        "fetch_payment",
-        "fetch payment details using payment id.",
-        parameters,
-        handler,
-    )
+  }
 }
 ```
 
-## Design Principles
+## Configuration
 
-1. **Minimal Interface Exposure**: The interfaces defined in this package include only methods that are actually used by our application.
+### Required Configuration
 
-2. **Proper Error Handling**: Functions return errors instead of panicking, allowing for graceful error handling throughout the application.
-
-3. **Implementation Hiding**: The implementation details using `mark3labs/mcp-go` are hidden behind clean interfaces, making future transitions easier.
-
-4. **Naming Clarity**: All implementation types are prefixed with `mark3labs` to clearly indicate they are specifically tied to the current library being used.
-
-## Directory Structure
-
-```
-pkg/mcpgo/
-├── server.go       # Server interface and implementation
-├── transport.go    # TransportServer interface
-├── stdio.go        # StdioServer implementation 
-├── tool.go         # Tool interfaces and implementation
-└── README.md       # This file
-``` 
+- `REDASH_URL`: `https://redash.razorpay.com`
+- `REDASH_API_KEY`: Your Redash API key
