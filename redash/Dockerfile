@@ -39,4 +39,5 @@ ENV CONFIG="" \
 # Switch to the non-root user
 USER rzp
 
-ENTRYPOINT ["sh", "-c", "echo running: ./redash-mcp stdio --redash-url $REDASH_URL --redash-api-key $REDASH_API_KEY ${CONFIG:+--config ${CONFIG}} ${LOG_FILE:+--log-file ${LOG_FILE}} && ./redash-mcp stdio --redash-url $REDASH_URL --redash-api-key $REDASH_API_KEY ${CONFIG:+--config ${CONFIG}} ${LOG_FILE:+--log-file ${LOG_FILE}}"] 
+# Fixed entrypoint - removed echo statement that interferes with MCP stdio
+ENTRYPOINT ["./redash-mcp", "stdio", "--redash-url", "$REDASH_URL", "--redash-api-key", "$REDASH_API_KEY"]
